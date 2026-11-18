@@ -1,0 +1,15 @@
+node_modules/
+coverage/
+output/
+*.log
+.env
+.env.*
+.DS_Store
+Thumbs.db
+
+# Keep local reconciliation inputs and exports out of version control.
+data/
+*.xlsx
+*.xlsm
+*.xls
+*.xlsb

@@ -1,0 +1,19 @@
+{
+  "name": "excel-reconcile",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Offline Excel reconciliation viewer and reusable comparison modules",
+  "main": "./src/core.js",
+  "exports": {
+    ".": "./src/core.js",
+    "./profiles": "./src/profiles.js",
+    "./workbook": "./src/workbook.js",
+    "./report": "./src/report.js"
+  },
+  "scripts": {
+    "test": "node --test"
+  },
+  "engines": {
+    "node": ">=18"
+  }
+}

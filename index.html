@@ -1,0 +1,278 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="color-scheme" content="light">
+<title>Excel 对账比对器</title>
+<link rel="stylesheet" href="web/styles.css">
+<script defer src="vendor/sheetjs/xlsx.full.min.js"></script>
+<script defer src="src/profiles.js"></script>
+<script defer src="src/core.js"></script>
+<script defer src="src/workbook.js"></script>
+<script defer src="src/report.js"></script>
+<script defer src="web/app.js"></script>
+</head>
+<body>
+<a class="skip-link" href="#main">跳到主要内容</a>
+
+<header class="app-header">
+  <div class="wrap header-inner">
+    <div class="brand">
+      <div class="logo" aria-hidden="true">对</div>
+      <div>
+        <h1>对账比对器</h1>
+        <p>客户 Excel × 我方 Excel · 逐行逐列差异核对</p>
+      </div>
+    </div>
+    <div class="header-right">
+      <span class="privacy-pill" title="文件只在当前浏览器内解析，不会上传到服务器">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M12 3 4.5 6v5.2c0 4.6 3.2 8.8 7.5 9.8 4.3-1 7.5-5.2 7.5-9.8V6L12 3Z" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/><path d="m8.8 12 2.1 2.1 4.3-4.3" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        本地处理 · 文件不上传
+      </span>
+      <span class="engine-pill" id="engine-status" data-state="loading"><i class="dot"></i><span>解析引擎：加载中…</span></span>
+    </div>
+  </div>
+</header>
+
+<main id="main" class="wrap">
+  <div id="notices" aria-live="polite"></div>
+
+  <section class="upload-grid" aria-label="文件选择">
+    <div class="dropzone side-customer" id="drop-customer" role="button" tabindex="0" aria-label="客户文件：拖拽到此处或点击选择">
+      <input type="file" id="file-customer" accept=".xlsx,.xlsm,.xls,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/vnd.ms-excel.sheet.macroEnabled.12,application/vnd.ms-excel" hidden>
+      <div class="dz-empty" id="dz-empty-customer">
+        <div class="dz-icon" aria-hidden="true">
+          <svg width="23" height="23" viewBox="0 0 24 24" fill="none"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8l-5-5Z" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/><path d="M14 3v5h5M8.5 13h7M8.5 16.5h4.5" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></svg>
+        </div>
+        <div class="dz-title">客户文件</div>
+        <div class="dz-sub">拖拽到这里，或点击选择</div>
+        <div class="dz-hint">.xlsx / .xlsm / .xls · 常为多 sheet 大文件</div>
+      </div>
+      <div class="dz-file" id="dz-file-customer" hidden>
+        <div class="dz-file-top">
+          <div class="file-icon" aria-hidden="true">XLS</div>
+          <div style="min-width:0">
+            <div class="file-name" id="file-name-customer"></div>
+            <div class="file-sub" id="file-sub-customer"></div>
+            <div class="file-status" id="file-status-customer"></div>
+          </div>
+        </div>
+        <div class="dz-actions">
+          <button type="button" class="mini-btn" id="reselect-customer">重新选择</button>
+          <span class="dz-note">点击卡片也可重新选择</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="dropzone side-ours" id="drop-ours" role="button" tabindex="0" aria-label="我方文件：拖拽到此处或点击选择">
+      <input type="file" id="file-ours" accept=".xlsx,.xlsm,.xls,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/vnd.ms-excel.sheet.macroEnabled.12,application/vnd.ms-excel" hidden>
+      <div class="dz-empty" id="dz-empty-ours">
+        <div class="dz-icon" aria-hidden="true">
+          <svg width="23" height="23" viewBox="0 0 24 24" fill="none"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8l-5-5Z" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/><path d="M14 3v5h5M8 15l2.2-2.2L12.5 15l3.5-3.5" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </div>
+        <div class="dz-title">我方文件</div>
+        <div class="dz-sub">拖拽到这里，或点击选择</div>
+        <div class="dz-hint">.xlsx / .xlsm / .xls · 通常为单 sheet</div>
+      </div>
+      <div class="dz-file" id="dz-file-ours" hidden>
+        <div class="dz-file-top">
+          <div class="file-icon" aria-hidden="true">XLS</div>
+          <div style="min-width:0">
+            <div class="file-name" id="file-name-ours"></div>
+            <div class="file-sub" id="file-sub-ours"></div>
+            <div class="file-status" id="file-status-ours"></div>
+          </div>
+        </div>
+        <div class="dz-actions">
+          <button type="button" class="mini-btn" id="reselect-ours">重新选择</button>
+          <span class="dz-note">点击卡片也可重新选择</span>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="panel config-panel" id="config-panel" hidden>
+    <div class="panel-head">
+      <div>
+        <h2>比对设置</h2>
+        <p>切换规则、工作表、表头行或配对键后会自动重算。</p>
+      </div>
+      <div class="config-actions">
+        <label class="field"><span>对账规则</span><select id="profile-select"></select></label>
+        <span class="status-chip" id="recalc-status">等待文件</span>
+      </div>
+    </div>
+    <div class="config-grid">
+      <div class="config-block">
+        <h3>工作表</h3>
+        <label class="field"><span>客户文件</span><select id="sheet-customer" disabled><option>请先载入客户文件</option></select></label>
+        <label class="field"><span>我方文件</span><select id="sheet-ours" disabled><option>请先载入我方文件</option></select></label>
+      </div>
+      <div class="config-block">
+        <h3>表头行</h3>
+        <div class="field-row">
+          <label class="field compact"><span>客户</span><input type="number" id="header-customer" min="1" step="1" value="1" disabled><button type="button" class="mini-btn" id="auto-header-customer" disabled title="重新自动识别客户文件表头行">自动</button></label>
+          <label class="field compact"><span>我方</span><input type="number" id="header-ours" min="1" step="1" value="1" disabled><button type="button" class="mini-btn" id="auto-header-ours" disabled title="重新自动识别我方文件表头行">自动</button></label>
+        </div>
+        <p class="header-hint" id="header-hint-customer">载入后自动识别</p>
+        <p class="header-hint" id="header-hint-ours">载入后自动识别</p>
+      </div>
+      <div class="config-block key-block">
+        <h3>配对键 <span class="mini-badge" id="key-mode-badge">自动</span></h3>
+        <div class="preset-row" id="key-presets"></div>
+        <div class="key-chips" id="key-chips"><span class="hint">两侧文件都载入后自动推荐</span></div>
+        <details class="key-picker">
+          <summary>自定义配对键列 <span id="key-count"></span></summary>
+          <div class="key-options" id="key-options"><p class="hint">载入文件后显示可勾选的列。</p></div>
+        </details>
+        <p class="hint">可多选；建议使用能唯一标识一行的列组合。修改后立即重算。</p>
+      </div>
+    </div>
+  </section>
+
+  <section id="results" hidden>
+    <div id="summary-line" class="summary-line"></div>
+
+    <div class="metrics" id="metrics">
+      <div class="metric" data-tone="blue"><span class="metric-label">客户行数</span><span class="metric-value" id="m-customer">—</span><span class="metric-note">客户 sheet 数据行</span></div>
+      <div class="metric" data-tone="teal"><span class="metric-label">我方行数</span><span class="metric-value" id="m-ours">—</span><span class="metric-note">我方 sheet 数据行</span></div>
+      <button type="button" class="metric" data-tone="green" data-filter-card="paired"><span class="metric-label">配对行 <span class="metric-note">点击查看</span></span><span class="metric-value" id="m-paired">—</span><span class="metric-note">两侧按配对键匹配</span></button>
+      <button type="button" class="metric" data-tone="amber" data-filter-card="missing"><span class="metric-label">缺失行 <span class="metric-note">仅客户有</span></span><span class="metric-value" id="m-missing">—</span><span class="metric-note">点击只看缺失行</span></button>
+      <button type="button" class="metric" data-tone="indigo" data-filter-card="extra"><span class="metric-label">多余行 <span class="metric-note">仅我方有</span></span><span class="metric-value" id="m-extra">—</span><span class="metric-note">点击只看多余行</span></button>
+      <button type="button" class="metric" data-tone="red" data-filter-card="diff"><span class="metric-label">不一致单元格 <span class="metric-note">点击查看</span></span><span class="metric-value" id="m-diff">—</span><span class="metric-note">仅统计已配对行</span></button>
+    </div>
+
+    <div class="panel">
+      <div class="panel-head">
+        <div>
+          <h2>列级统计</h2>
+          <p>仅统计已配对行；按不一致数从多到少排序。点击列名可只看该列有差异的行。</p>
+        </div>
+        <span class="status-chip" id="colstat-note"></span>
+      </div>
+      <div class="table-scroll column-stats-scroll">
+        <table class="colstats">
+          <thead><tr><th>列名</th><th>一致数</th><th>不一致数</th><th>合计</th><th class="bar-cell">差异率</th></tr></thead>
+          <tbody id="colstats-body"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="panel">
+      <div class="panel-head detail-head">
+        <div>
+          <h2>差异明细</h2>
+          <p>客户值在左，我方值在右；红色为不一致单元格，黄色为缺失行，蓝色为多余行。表格可左右滚动查看更多列。</p>
+        </div>
+        <div class="toolbar">
+          <div class="segmented" id="row-filters" role="group" aria-label="行筛选">
+            <button type="button" data-filter="all" class="active">全部</button>
+            <button type="button" data-filter="diff" title="显示有差异的配对行，以及缺失行和多余行">只看差异</button>
+            <button type="button" data-filter="missing">仅客户有</button>
+            <button type="button" data-filter="extra">仅我方有</button>
+            <button type="button" data-filter="paired">仅配对</button>
+          </div>
+          <label class="search-box">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" aria-hidden="true"><circle cx="11" cy="11" r="6.5" stroke="currentColor" stroke-width="1.8"/><path d="m16 16 4 4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+            <input type="search" id="search-input" placeholder="搜索键值或单元格内容…" autocomplete="off" aria-label="搜索键值或单元格内容">
+            <kbd>/</kbd>
+          </label>
+          <label class="check-inline"><input type="checkbox" id="diff-cols-only"> 只显示有差异的列</label>
+          <select id="sort-select" aria-label="排序方式">
+            <option value="default">默认顺序</option>
+            <option value="diff">差异优先</option>
+            <option value="customerRow">客户行号</option>
+            <option value="ourRow">我方行号</option>
+            <option value="key">配对键</option>
+            <optgroup label="按列排序" id="sort-columns-group"></optgroup>
+          </select>
+          <button type="button" id="sort-dir" class="icon-btn" title="切换升序/降序" aria-label="切换升序/降序">↑</button>
+          <button type="button" id="export-btn" class="btn primary">导出 Excel</button>
+        </div>
+      </div>
+      <div id="active-filters" class="active-filters"></div>
+      <div class="table-scroll detail-scroll" id="detail-scroll">
+        <table id="detail-table" class="detail-table">
+          <thead id="detail-head"></thead>
+          <tbody id="detail-body"></tbody>
+        </table>
+      </div>
+      <div class="pager">
+        <span id="detail-count" class="hint"></span>
+        <div class="pager-spacer"></div>
+        <label class="page-size">每页 <select id="page-size"><option value="50">50</option><option value="100" selected>100</option><option value="200">200</option><option value="500">500</option></select> 行</label>
+        <button type="button" id="page-first" class="icon-btn" aria-label="第一页">«</button>
+        <button type="button" id="page-prev" class="icon-btn" aria-label="上一页">‹</button>
+        <span class="page-info">第 <input type="number" id="page-input" min="1" value="1" aria-label="页码"> / <span id="page-total">1</span> 页</span>
+        <button type="button" id="page-next" class="icon-btn" aria-label="下一页">›</button>
+        <button type="button" id="page-last" class="icon-btn" aria-label="最后一页">»</button>
+      </div>
+    </div>
+  </section>
+
+  <section id="empty-state" class="empty-state">
+    <div class="empty-icon" aria-hidden="true">⇄</div>
+    <h2>先放入两个 Excel 文件</h2>
+    <p>左侧客户文件，右侧我方文件。所有解析都在本机浏览器完成，不会上传。</p>
+  </section>
+
+  <details class="panel help" id="help-panel">
+    <summary>示例 / 使用说明 <span class="mini-badge">第一次用点这里</span></summary>
+    <div class="help-body">
+      <div class="help-grid">
+        <div>
+          <h3>四步完成对账</h3>
+          <ol>
+            <li>把客户文件和系统导出的我方文件分别拖入左右区域。</li>
+            <li>确认工作表。默认选择第一个非空 sheet，可随时切换。</li>
+            <li>确认表头行。通用规则默认使用第一条非空行；可输入行号覆盖。</li>
+            <li>确认配对键。默认自动推荐，也可勾选共同列组合；变化后立即重算。</li>
+          </ol>
+        </div>
+        <div>
+          <h3>颜色与指标</h3>
+          <p><strong style="color:#9a5b00">黄色</strong>：仅客户有（缺失行）；<strong style="color:#1d4ed8">蓝色</strong>：仅我方有（多余行）；<strong style="color:#c62828">红色</strong>：配对行内不一致的单元格。</p>
+          <p>「不一致单元格」只统计已配对行；缺失/多余行单独计数。</p>
+        </div>
+        <div>
+          <h3>对账规则</h3>
+          <p>通用规则根据共同列的非空率和唯一值比例推荐配对键。</p>
+          <p>生产物料规则在前 8 行按关键词识别表头，并优先推荐设计批号、任务代码、料品等业务列组合。</p>
+        </div>
+      </div>
+    </div>
+  </details>
+</main>
+
+<footer>
+  <div class="wrap">
+    <span>Excel 对账比对器 · 可离线使用</span>
+    <span>文件不离开浏览器 · 建议使用 64 位 Chrome / Edge</span>
+  </div>
+</footer>
+
+<div class="overlay" id="overlay" hidden>
+  <div class="overlay-card" role="dialog" aria-modal="true" aria-labelledby="overlay-title">
+    <div class="spinner" aria-hidden="true"></div>
+    <h2 id="overlay-title">正在处理…</h2>
+    <p id="overlay-detail"></p>
+    <div class="progress" id="overlay-progress"><span></span></div>
+    <p class="overlay-note">文件只在当前浏览器内解析，不会上传到任何服务器</p>
+  </div>
+</div>
+
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+<div class="copy-modal" id="copy-modal" hidden>
+  <div class="copy-modal-card" role="dialog" aria-modal="true" aria-labelledby="copy-modal-title">
+    <h2 id="copy-modal-title">复制该行信息</h2>
+    <p class="hint">浏览器未允许自动写入剪贴板。内容已全选，请按 Ctrl+C（Mac 为 ⌘+C）后关闭。</p>
+    <textarea id="copy-modal-text" readonly spellcheck="false" aria-label="待复制内容"></textarea>
+    <div class="copy-modal-actions">
+      <button type="button" class="btn primary" id="copy-modal-close">关闭</button>
+    </div>
+  </div>
+</div>
+</body>
+</html>
