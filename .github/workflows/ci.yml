@@ -1,0 +1,58 @@
+# ============================================================
+# CI 工作流：代码推送后自动跑测试
+# ------------------------------------------------------------
+# 文件必须放在 .github/workflows/ 目录下，GitHub 才会识别它。
+# 每次触发时，GitHub 会分配一台全新的 Ubuntu 虚拟机（叫"运行器"），
+# 从上到下执行下面的步骤。任何一步失败，整个工作流就会标红。
+# ============================================================
+
+# name：工作流的显示名称，会出现在仓库 Actions 页面的左侧列表里。
+name: CI
+
+# on：定义"什么时候触发"。这是 GitHub Actions 的专用关键字。
+# 这里配置了两种触发方式：
+#   1. 有人把代码 push 到 main 分支；
+#   2. 有人创建或更新一个指向 main 的 Pull Request。
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+# permissions：限制工作流身份（GITHUB_TOKEN）的权限。
+# 我们只跑测试、不改代码，所以只给读取权限。这是"最小权限原则"，
+# 即使工作流被恶意代码利用，也拿不到写仓库的能力。
+permissions:
+  contents: read
+
+# jobs：一个工作流可以包含多个任务，这里只需要一个，名字叫 test。
+jobs:
+  test:
+    name: 运行单元测试
+    # runs-on 指定运行器类型。ubuntu-latest 是 GitHub 免费提供的
+    # 最新版 Ubuntu 环境，里面已经预装了 Git、Node 等常用工具。
+    runs-on: ubuntu-latest
+
+    # steps：按顺序执行的步骤。每步要么是 uses（复用现成的 action），
+    # 要么是 run（执行一条 shell 命令）。
+    steps:
+      # 步骤 1：把仓库代码检出到运行器上。
+      # 没有这一步，运行器上什么文件都没有，后面就无从测试。
+      # @v4 是固定主版本号：既能拿到 bug 修复，又不会被破坏性更新搞崩。
+      - name: 检出代码
+        uses: actions/checkout@v4
+
+      # 步骤 2：安装 Node.js。
+      # 项目 README 要求 Node >= 18，这里固定 26（长期支持版）。
+      # 固定版本可以避免"在我本地是好的，CI 上却挂了"的环境漂移。
+      - name: 安装 Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '26'
+
+      # 步骤 3：运行测试。
+      # package.json 里 "test": "node --test"，Node 会自动发现
+      # test/ 目录下的 *.test.js 并执行里面的 test()。
+      # 本项目零 npm 依赖（SheetJS 已随仓库提供），所以不需要 npm install。
+      - name: 运行测试
+        run: npm test
