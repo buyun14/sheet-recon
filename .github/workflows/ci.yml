@@ -42,7 +42,7 @@ jobs:
       # GitHub 现在会强制它跑在 Node 24 上并给出弃用警告。
       # 固定主版本号既能拿到 bug 修复，又不会被破坏性更新搞崩。
       - name: 检出代码
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
 
       # 步骤 2：安装 Node.js，供后面的 npm 命令使用。
       # 这里有两层完全不同的 Node 版本，别混淆：
@@ -50,7 +50,7 @@ jobs:
       #   2. node-version: '26' —— 我们的测试用 Node 26（LTS）运行。
       # 项目 engines 要求 >= 18，固定版本可以避免"在我本地是好的，CI 上却挂了"。
       - name: 安装 Node.js
-        uses: actions/setup-node@v6
+        uses: actions/setup-node@v7
         with:
           node-version: '26'
 
